@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오늘 점심 뭐 먹지?</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; padding:20px 14px;
+  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR","Malgun Gothic",sans-serif;
+  background:linear-gradient(135deg,#fff8ed 0%,#fff4f4 48%,#f4f1ff 100%);
+  color:#292524;
+}
+.app{width:min(100%,760px);margin:auto;text-align:center}
+header{margin:8px 0 20px}
+h1{margin:0;font-size:clamp(28px,7vw,44px);font-weight:900;letter-spacing:-2px}
+.subtitle{margin:8px 0 0;color:#78716c;font-size:15px}
+.card{
+  background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.95);
+  border-radius:30px;padding:clamp(16px,4vw,30px);
+  box-shadow:0 18px 55px rgba(68,64,60,.14);backdrop-filter:blur(10px)
+}
+.roulette-wrap{
+  position:relative;width:min(88vw,520px);aspect-ratio:1;margin:5px auto 22px
+}
+.pointer{
+  position:absolute;z-index:20;left:50%;top:-5px;transform:translateX(-50%);
+  width:0;height:0;border-left:19px solid transparent;border-right:19px solid transparent;
+  border-top:42px solid #ef4444;filter:drop-shadow(0 4px 3px rgba(0,0,0,.25))
+}
+.wheel{
+  width:100%;height:100%;border-radius:50%;position:relative;overflow:hidden;
+  border:9px solid white;
+  background:conic-gradient(
+    from 0deg,
+    #f87171 0deg 36deg, #fb923c 36deg 72deg, #facc15 72deg 108deg,
+    #a3e635 108deg 144deg, #4ade80 144deg 180deg, #2dd4bf 180deg 216deg,
+    #38bdf8 216deg 252deg, #818cf8 252deg 288deg, #c084fc 288deg 324deg,
+    #f472b6 324deg 360deg
+  );
+  box-shadow:0 12px 32px rgba(41,37,36,.22),inset 0 0 0 2px rgba(0,0,0,.08);
+  transition:transform 3s cubic-bezier(.12,.75,.18,1);
+  will-change:transform
+}
+.wheel:after{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,transparent 0deg 35.5deg,rgba(255,255,255,.55) 35.5deg 36deg);
+  pointer-events:none
+}
+.labels{position:absolute;inset:0;z-index:3}
+.label{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:70px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  line-height:1.05;
+  text-align:center;
+  font-size:clamp(11px,2.2vw,14px);
+  font-weight:900;
+  color:#fff;
+  text-shadow:0 2px 3px rgba(0,0,0,.4);
+  white-space:nowrap;
+  pointer-events:none;
+}
+.label .food-icon{
+  width:clamp(28px,6.5vw,42px);
+  height:clamp(28px,6.5vw,42px);
+  display:grid;place-items:center;
+  filter:drop-shadow(0 3px 2px rgba(0,0,0,.2));
+}
+.food-icon svg{width:100%;height:100%;display:block}
+.hub{
+  position:absolute;z-index:10;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:clamp(78px,19vw,105px);aspect-ratio:1;border-radius:50%;
+  background:#2563eb;border:6px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,.24);
+  display:grid;place-items:center;color:#fff;font-weight:900;font-size:clamp(14px,3vw,19px);
+  pointer-events:none
+}
+.spin-btn{
+  width:min(100%,380px);border:0;border-radius:18px;padding:17px 22px;
+  background:#292524;color:#fff;font-size:19px;font-weight:900;cursor:pointer;
+  box-shadow:0 7px 0 #0f0f0f,0 12px 25px rgba(41,37,36,.18);
+  transition:.12s
+}
+.spin-btn:hover{transform:translateY(-2px);box-shadow:0 9px 0 #0f0f0f,0 15px 28px rgba(41,37,36,.18)}
+.spin-btn:active{transform:translateY(5px);box-shadow:0 2px 0 #0f0f0f}
+.spin-btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:0 4px 0 #0f0f0f}
+.result{
+  margin-top:24px;min-height:125px;border-radius:22px;background:#fafaf9;
+  border:1px solid #e7e5e4;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:15px
+}
+.result-title{font-size:14px;color:#78716c;font-weight:700;margin-bottom:5px}
+.result-menu{font-size:clamp(28px,8vw,48px);font-weight:950;letter-spacing:-2px;color:#ef4444;line-height:1.15}
+.result-menu.empty{font-size:clamp(21px,6vw,32px);color:#a8a29e}
+
+@media(max-width:430px){
+  body{padding:12px 8px}
+  .card{padding:14px 10px 20px;border-radius:24px}
+  .roulette-wrap{width:min(94vw,390px)}
+  .wheel{border-width:7px}
+  .pointer{border-left-width:14px;border-right-width:14px;border-top-width:31px}
+  .label{width:60px;font-size:10px;}
+  .label .food-icon{width:26px;height:26px}
+}
+</style>
+</head>
+<body>
+<main class="app">
+<header>
+  <h1>🍽️ 오늘 점심 뭐 먹지?</h1>
+  <p class="subtitle">룰렛을 돌려 오늘의 메뉴를 골라보세요!</p>
+</header>
+
+<section class="card">
+  <div class="roulette-wrap">
+    <div class="pointer" aria-hidden="true"></div>
+    <div class="wheel" id="wheel">
+      <div class="labels" id="labels"></div>
+      <div class="hub">돌리기</div>
+    </div>
+  </div>
+
+  <button class="spin-btn" id="spinBtn">🎯 오늘의 메뉴 뽑기</button>
+
+  <div class="result" aria-live="polite">
+    <div class="result-title">오늘의 메뉴는?</div>
+    <div class="result-menu empty" id="result">룰렛을 돌려보세요!</div>
+  </div>
+</section>
+</main>
+
+<script>
+const foods = {
+  kimchi: `<svg viewBox="0 0 100 80"><ellipse cx="50" cy="62" rx="39" ry="10" fill="#7c2d12"/><path d="M14 37 Q18 68 50 70 Q82 68 86 37Z" fill="#292524"/><path d="M18 38 Q50 24 82 38 Q73 49 50 50 Q27 49 18 38Z" fill="#ef4444"/><circle cx="37" cy="39" r="5" fill="#fde68a"/><circle cx="57" cy="35" r="5" fill="#fde68a"/><circle cx="67" cy="43" r="4" fill="#86efac"/><path d="M28 29l7-8M52 28l4-9M70 31l7-7" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/></svg>`,
+  pork: `<svg viewBox="0 0 100 80"><ellipse cx="50" cy="66" rx="40" ry="7" fill="#d6d3d1"/><path d="M18 48 Q25 18 55 22 Q78 25 82 48Z" fill="#d97706"/><path d="M25 48 Q34 31 53 32 Q70 33 76 48Z" fill="#fbbf24"/><path d="M32 44l9-13M48 45l8-13M63 45l7-11" stroke="#92400e" stroke-width="3"/><circle cx="74" cy="53" r="9" fill="#16a34a"/></svg>`,
+  noodle: `<svg viewBox="0 0 100 80"><ellipse cx="50" cy="63" rx="39" ry="8" fill="#c4b5fd"/><path d="M13 38 Q50 25 87 38 L81 60 Q50 72 19 60Z" fill="#f5f5f4"/><path d="M24 42 Q45 29 73 40M27 48 Q49 36 77 47M29 54 Q49 44 72 53" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/><circle cx="48" cy="39" r="5" fill="#22c55e"/><circle cx="65" cy="43" r="4" fill="#fb7185"/></svg>`,
+  spicy: `<svg viewBox="0 0 100 80"><path d="M17 50 Q22 68 50 70 Q78 68 83 50Z" fill="#292524"/><ellipse cx="50" cy="48" rx="34" ry="18" fill="#dc2626"/><circle cx="33" cy="46" r="7" fill="#f97316"/><circle cx="50" cy="40" r="7" fill="#ea580c"/><circle cx="66" cy="48" r="7" fill="#f97316"/><path d="M42 28q4-8 10 0M57 27q5-7 9 1" fill="none" stroke="#65a30d" stroke-width="5"/></svg>`,
+  bibim: `<svg viewBox="0 0 100 80"><path d="M13 35 Q50 20 87 35 L80 65 Q50 76 20 65Z" fill="#292524"/><ellipse cx="50" cy="42" rx="33" ry="20" fill="#16a34a"/><path d="M23 41q12-12 24 0t28 0" fill="none" stroke="#ef4444" stroke-width="8"/><circle cx="50" cy="35" r="9" fill="#fde68a"/><circle cx="35" cy="49" r="5" fill="#f97316"/><circle cx="68" cy="50" r="5" fill="#facc15"/></svg>`,
+  jjajang: `<svg viewBox="0 0 100 80"><ellipse cx="50" cy="63" rx="38" ry="8" fill="#a78bfa"/><ellipse cx="50" cy="46" rx="34" ry="20" fill="#f5f5f4"/><path d="M22 43 Q50 29 78 43 Q70 60 50 61 Q30 60 22 43Z" fill="#292524"/><path d="M30 44q8-8 16 0t16 0t12 0" fill="none" stroke="#92400e" stroke-width="4"/><circle cx="57" cy="37" r="4" fill="#65a30d"/></svg>`,
+  sushi: `<svg viewBox="0 0 100 80"><ellipse cx="50" cy="64" rx="38" ry="7" fill="#dbeafe"/><g transform="rotate(-12 32 43)"><rect x="18" y="32" width="29" height="25" rx="10" fill="#f5f5f4"/><path d="M20 39 Q32 25 45 39Z" fill="#fb7185"/><path d="M22 43h22" stroke="#fb923c" stroke-width="4"/></g><g transform="rotate(12 66 43)"><rect x="53" y="32" width="29" height="25" rx="10" fill="#f5f5f4"/><path d="M55 39 Q67 25 80 39Z" fill="#fb7185"/><path d="M57 43h22" stroke="#fb923c" stroke-width="4"/></g></svg>`,
+  burger: `<svg viewBox="0 0 100 80"><path d="M18 39 Q20 17 50 17 Q80 17 82 39Z" fill="#d97706"/><path d="M20 36q30 9 60 0" stroke="#fbbf24" stroke-width="4"/><rect x="19" y="40" width="62" height="8" rx="4" fill="#dc2626"/><rect x="20" y="48" width="60" height="7" rx="3" fill="#facc15"/><path d="M22 56h56l-5 11H27Z" fill="#b45309"/><circle cx="35" cy="27" r="2" fill="#fff"/><circle cx="52" cy="24" r="2" fill="#fff"/><circle cx="66" cy="29" r="2" fill="#fff"/></svg>`,
+  cold: `<svg viewBox="0 0 100 80"><path d="M15 39 Q50 25 85 39 L79 64 Q50 73 21 64Z" fill="#e7e5e4"/><ellipse cx="50" cy="42" rx="34" ry="19" fill="#dbeafe"/><path d="M24 43q12-13 25 0t26 0" fill="none" stroke="#8b5cf6" stroke-width="4"/><circle cx="50" cy="35" r="7" fill="#fde68a"/><path d="M45 35h10" stroke="#ef4444" stroke-width="3"/></svg>`,
+  soup: `<svg viewBox="0 0 100 80"><ellipse cx="50" cy="63" rx="39" ry="8" fill="#d6d3d1"/><path d="M13 38 Q50 24 87 38 L80 61 Q50 72 20 61Z" fill="#44403c"/><ellipse cx="50" cy="39" rx="34" ry="16" fill="#f5f5f4"/><circle cx="37" cy="39" r="7" fill="#fde68a"/><circle cx="68" cy="43" r="5" fill="#f59e0b"/><circle cx="57" cy="35" r="6" fill="#84cc16"/></svg>`
+};
+
+const menus = [
+  ["김치찌개","kimchi"],["돈가스","pork"],["칼국수","noodle"],["제육볶음","spicy"],["비빔밥","bibim"],
+  ["짜장면","jjajang"],["초밥","sushi"],["햄버거","burger"],["냉면","cold"],["국밥","soup"]
+];
+
+const wheel=document.getElementById("wheel");
+const labels=document.getElementById("labels");
+const spinBtn=document.getElementById("spinBtn");
+const result=document.getElementById("result");
+const slice=36;
+let rotation=0, spinning=false;
+
+menus.forEach(([name,icon],i)=>{
+  const el=document.createElement("div");
+  el.className="label";
+  const angle = i * slice + slice / 2; // 각 부채꼴의 중앙 각도
+  el.innerHTML=`<span class="food-icon">${foods[icon]}</span><span>${name}</span>`;
+
+  // 방사형 정렬: 중심에서 회전 후 바깥쪽으로 이동하여 부채꼴 안쪽에 배치
+  el.style.transform = `translate(-50%, -50%) rotate(${angle}deg) translateY(-145px)`;
+  labels.appendChild(el);
+});
+
+function spinRoulette(){
+  if(spinning)return;
+  spinning=true; spinBtn.disabled=true;
+  result.className="result-menu empty"; result.textContent="두근두근…";
+
+  const winner=Math.floor(Math.random()*menus.length);
+  const center=winner*slice+slice/2;
+  
+  // 12시 포인터(0도) 기준 당첨 각도 계산
+  const target=(360-center)%360;
+  const turns=6+Math.floor(Math.random()*2);
+  
+  // 이전 회전 각도 상태를 고려한 누적 회전
+  const currentMod = rotation % 360;
+  let addRotation = target - currentMod;
+  if (addRotation < 0) addRotation += 360;
+  
+  rotation += turns * 360 + addRotation;
+  wheel.style.transform=`rotate(${rotation}deg)`;
+
+  setTimeout(()=>{
+    result.className="result-menu";
+    result.textContent=`${menus[winner][0]}`;
+    spinning=false; spinBtn.disabled=false;
+  },3050);
+}
+spinBtn.addEventListener("click",spinRoulette);
+</script>
+</body>
+</html>
